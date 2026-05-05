@@ -1,0 +1,12 @@
+# Ignore data and databases
+/data/
+*.csv
+*.parquet
+*.json
+delta_lake/
+
+# Python
+__pycache__/
+*.pyc
+.env
+venv/
