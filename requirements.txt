@@ -1,0 +1,15 @@
+# Data Ingestion & Processing
+pandas==2.2.2
+kagglehub[pandas-datasets]
+python-dotenv==1.0.1
+
+# Streaming (Kafka & Spark)
+kafka-python==2.0.2
+pyspark==3.5.1
+
+# Database Storage
+pymongo==4.7.0
+
+# Machine Learning (Forecasting)
+prophet==1.1.5
+scikit-learn==1.4.2
