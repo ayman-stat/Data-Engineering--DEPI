@@ -17,6 +17,7 @@ checkpoints/**
 !checkpoints/.gitkeep
 src/consumer/checkpoints/
 logs/
+*.pid
 ml_outputs/**
 !ml_outputs/
 !ml_outputs/.gitkeep

@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import time
@@ -17,6 +18,34 @@ load_dotenv(PROJECT_ROOT / ".env")
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 TOPIC_NAME = os.getenv("KAFKA_TOPIC", "live-ecommerce-orders")
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Simulate live Olist orders by sending CSV rows to Kafka."
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of orders to send. Default sends all orders.",
+    )
+    parser.add_argument(
+        "--delay-seconds",
+        type=float,
+        default=1.0,
+        help="Delay between orders. Use a small value for demos.",
+    )
+    parser.add_argument(
+        "--start-row",
+        type=int,
+        default=0,
+        help="Zero-based row offset in the source CSV.",
+    )
+    return parser.parse_args()
+
+
+args = parse_args()
+
 print(f"Connecting to Kafka broker at {KAFKA_BROKER}...")
 try:
     producer = KafkaProducer(
@@ -32,6 +61,10 @@ print(f"Loading dataset from {CSV_FILE_PATH}...")
 try:
     df = pd.read_csv(CSV_FILE_PATH)
     df = df.where(pd.notnull(df), None)
+    if args.start_row:
+        df = df.iloc[args.start_row:]
+    if args.limit is not None:
+        df = df.head(args.limit)
     print(f"Loaded {len(df)} orders.")
 except FileNotFoundError:
     print(f"CSV file not found at {CSV_FILE_PATH}. Did you run the ingestion script?")
@@ -49,7 +82,7 @@ try:
             f"Time: {order_data['live_purchase_timestamp']}"
         )
 
-        time.sleep(1)
+        time.sleep(args.delay_seconds)
 except KeyboardInterrupt:
     print("\nStreaming stopped by user.")
 finally:

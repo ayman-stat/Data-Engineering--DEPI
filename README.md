@@ -227,10 +227,57 @@ In another terminal, start the live producer:
 python src\producer\live_producer.py
 ```
 
+For a controlled demo, send only a limited number of orders:
+
+```powershell
+python src\producer\live_producer.py --limit 100 --delay-seconds 0.25
+```
+
 Run the ML forecast:
 
 ```powershell
 python src\ml\forecast_daily_orders.py
+```
+
+## Demo Scripts
+
+Use this script when you want the numbers to refresh for Power BI:
+
+```powershell
+.\scripts\start_demo_pipeline.ps1 -Limit 100 -DelaySeconds 0.25
+```
+
+What it does:
+
+- Starts Kafka and MongoDB with Docker Compose.
+- Downloads the dataset if it is missing.
+- Starts the Spark streaming consumer in the background.
+- Sends a controlled batch of live orders to Kafka.
+- Waits for Spark micro-batches to update Gold parquet outputs.
+- Refreshes the ML forecast outputs.
+
+For a clean presentation run, reset generated lake/checkpoint outputs first:
+
+```powershell
+.\scripts\start_demo_pipeline.ps1 -CleanRun -Limit 100 -DelaySeconds 0.25
+```
+
+Stop the background Spark consumer after the demo:
+
+```powershell
+.\scripts\stop_demo_pipeline.ps1
+```
+
+Stop Spark and Docker services:
+
+```powershell
+.\scripts\stop_demo_pipeline.ps1 -StopDocker
+```
+
+Refresh only the ML forecast:
+
+```powershell
+.\scripts\refresh_ml.ps1
 ```
 
 ## Verification Commands
@@ -266,6 +313,24 @@ type ml_outputs\daily_orders_metrics.json
 ```
 
 ## Power BI Dashboard Plan
+
+The Power BI report file is stored here:
+
+```text
+powerbi/ecommerce_realtime_dashboard.pbix
+```
+
+Clean Power Query M code is documented here:
+
+```text
+powerbi/power_query_m_code.md
+```
+
+After running the demo pipeline script, open Power BI and click:
+
+```text
+Home -> Refresh
+```
 
 Recommended pages:
 
