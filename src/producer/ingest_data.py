@@ -1,19 +1,19 @@
-import kagglehub
 import os
 import shutil
+from pathlib import Path
 
-# Define the local data directory
-DATA_DIR = "../../data"
+import kagglehub
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_DIR = PROJECT_ROOT / "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
-print("🚀 Downloading dataset directly from Kaggle...")
+print("Downloading dataset directly from Kaggle...")
 
-# 1. Download the entire dataset folder at once (bypasses Pandas entirely!)
-# This returns the path to the temporary folder where Kaggle downloaded the files
 dataset_path = kagglehub.dataset_download("olistbr/brazilian-ecommerce")
-print(f"✅ Download complete. Extracting from: {dataset_path}")
+print(f"Download complete. Extracting from: {dataset_path}")
 
-# The 9 files we need
 file_names = [
     "olist_customers_dataset.csv",
     "olist_geolocation_dataset.csv",
@@ -23,20 +23,19 @@ file_names = [
     "olist_orders_dataset.csv",
     "olist_products_dataset.csv",
     "olist_sellers_dataset.csv",
-    "product_category_name_translation.csv"
+    "product_category_name_translation.csv",
 ]
 
-print("\n📂 Moving files into your /data folder...")
+print("\nMoving files into your /data folder...")
 
-# 2. Copy the raw files natively (zero data corruption or parsing errors)
 for file_name in file_names:
-    source = os.path.join(dataset_path, file_name)
-    destination = os.path.join(DATA_DIR, file_name)
-    
+    source = Path(dataset_path) / file_name
+    destination = DATA_DIR / file_name
+
     try:
         shutil.copy2(source, destination)
-        print(f"✅ Successfully copied {file_name}")
+        print(f"Successfully copied {file_name}")
     except FileNotFoundError:
-        print(f"⚠️ Warning: Could not find {file_name} in the downloaded dataset.")
+        print(f"Warning: could not find {file_name} in the downloaded dataset.")
 
-print("\n🎉 All datasets successfully ingested into the /data folder!")
+print("\nAll datasets successfully ingested into the /data folder.")

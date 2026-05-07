@@ -1,65 +1,58 @@
-import os
 import json
+import os
 import time
-import pandas as pd
 from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
 from dotenv import load_dotenv
 from kafka import KafkaProducer
 
-# 1. Load environment variables from the .env file
-# We use '../../.env' because we are running this from src/producer/
-load_dotenv('../../.env')
 
-KAFKA_BROKER = os.getenv('KAFKA_BROKER', 'localhost:9092')
-TOPIC_NAME = os.getenv('KAFKA_TOPIC', 'live-ecommerce-orders')
-CSV_FILE_PATH = '../../data/olist_orders_dataset.csv'
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+CSV_FILE_PATH = PROJECT_ROOT / "data" / "olist_orders_dataset.csv"
 
-# 2. Connect to Kafka
-print(f"🔄 Connecting to Kafka Broker at {KAFKA_BROKER}...")
+load_dotenv(PROJECT_ROOT / ".env")
+
+KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
+TOPIC_NAME = os.getenv("KAFKA_TOPIC", "live-ecommerce-orders")
+
+print(f"Connecting to Kafka broker at {KAFKA_BROKER}...")
 try:
     producer = KafkaProducer(
         bootstrap_servers=[KAFKA_BROKER],
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        value_serializer=lambda value: json.dumps(value).encode("utf-8"),
     )
-    print("✅ Successfully connected to Kafka!")
-except Exception as e:
-    print(f"❌ Failed to connect to Kafka: {e}")
-    exit()
+    print("Successfully connected to Kafka.")
+except Exception as exc:
+    print(f"Failed to connect to Kafka: {exc}")
+    raise SystemExit(1)
 
-# 3. Load the dataset
-print(f"📥 Loading dataset from {CSV_FILE_PATH}...")
+print(f"Loading dataset from {CSV_FILE_PATH}...")
 try:
     df = pd.read_csv(CSV_FILE_PATH)
-    # Fill NaN values with None so JSON serialization works smoothly
-    df = df.where(pd.notnull(df), None) 
-    print(f"✅ Loaded {len(df)} orders.")
+    df = df.where(pd.notnull(df), None)
+    print(f"Loaded {len(df)} orders.")
 except FileNotFoundError:
-    print(f"❌ CSV file not found at {CSV_FILE_PATH}! Did you run the ingestion script?")
-    exit()
+    print(f"CSV file not found at {CSV_FILE_PATH}. Did you run the ingestion script?")
+    raise SystemExit(1)
 
-# 4. Simulate Live Streaming
-print(f"🚀 Starting live stream to topic '{TOPIC_NAME}'... Press Ctrl+C to stop.")
+print(f"Starting live stream to topic '{TOPIC_NAME}'. Press Ctrl+C to stop.")
 try:
-    for index, row in df.iterrows():
-        # Convert row to dictionary
+    for _, row in df.iterrows():
         order_data = row.to_dict()
-        
-        # Inject current timestamp to simulate live purchase
-        order_data['live_purchase_timestamp'] = datetime.utcnow().isoformat()
-        
-        # Fire it into Kafka!
+        order_data["live_purchase_timestamp"] = datetime.utcnow().isoformat()
+
         producer.send(TOPIC_NAME, value=order_data)
-        
-        # Print to terminal so you can watch the magic
-        print(f"📦 Sent Order: {order_data['order_id']} | Time: {order_data['live_purchase_timestamp']}")
-        
-        # Wait 1 second before sending the next one
+        print(
+            f"Sent order: {order_data['order_id']} | "
+            f"Time: {order_data['live_purchase_timestamp']}"
+        )
+
         time.sleep(1)
-        
 except KeyboardInterrupt:
-    print("\n🛑 Streaming stopped by user.")
+    print("\nStreaming stopped by user.")
 finally:
-    # Ensure all messages are sent before closing
     producer.flush()
     producer.close()
-    print("🔌 Kafka producer closed cleanly.")
+    print("Kafka producer closed cleanly.")
